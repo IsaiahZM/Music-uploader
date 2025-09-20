@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Upload & Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .upload-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: linear-gradient(45deg, #f8f9ff, #f0f4ff);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+            transform: rotate(-45deg);
+            transition: transform 0.6s ease;
+        }
+
+        .upload-area:hover::before {
+            transform: rotate(-45deg) translate(50%, 50%);
+        }
+
+        .upload-area:hover {
+            border-color: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+        }
+
+        .upload-area.dragover {
+            border-color: #4c51bf;
+            background: linear-gradient(45deg, #e6f3ff, #dae8ff);
+            transform: scale(1.02);
+        }
+
+        .upload-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .upload-text {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: #4a5568;
+            font-weight: 600;
+        }
+
+        .upload-hint {
+            color: #718096;
+            font-size: 1rem;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .music-library {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .library-title {
+            font-size: 2rem;
+            margin-bottom: 25px;
+            color: #2d3748;
+            text-align: center;
+            position: relative;
+        }
+
+        .library-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+
+        .music-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .music-item {
+            background: linear-gradient(135deg, #f7fafc, #edf2f7);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .music-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .music-item:hover::before {
+            left: 100%;
+        }
+
+        .music-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+
+        .music-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .music-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .music-details h3 {
+            font-size: 1.1rem;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .music-details p {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .music-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .play-btn, .delete-btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .play-btn {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+        }
+
+        .play-btn:hover {
+            background: linear-gradient(135deg, #38a169, #2f855a);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+        }
+
+        .delete-btn {
+            background: linear-gradient(135deg, #f56565, #e53e3e);
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background: linear-gradient(135deg, #e53e3e, #c53030);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
+        }
+
+        .now-playing {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(45, 55, 72, 0.95);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.3);
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .now-playing.active {
+            transform: translateY(0);
+        }
+
+        .now-playing-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+        }
+
+        .now-playing-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .now-playing-details h4 {
+            margin-bottom: 3px;
+            font-size: 1rem;
+        }
+
+        .now-playing-details p {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 2;
+            justify-content: center;
+        }
+
+        .control-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+
+        .progress-container {
+            flex: 1;
+            margin: 0 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 2px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 0.75rem;
+            opacity: 0.8;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .music-item {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .now-playing {
+                flex-direction: column;
+                gap: 15px;
+                padding: 20px 15px;
+            }
+            
+            .audio-controls {
+                order: -1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 Music Player</h1>
+            <p>Upload and enjoy your favorite tracks</p>
+        </div>
+
+        <div class="upload-section">
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-content">
+                    <span class="upload-icon">🎶</span>
+                    <div class="upload-text">Click to upload music or drag & drop</div>
+                    <div class="upload-hint">Supports MP3, WAV, M4A, and other audio formats</div>
+                </div>
+            </div>
+            <input type="file" id="fileInput" accept="audio/*" multiple>
+        </div>
+
+        <div class="music-library">
+            <h2 class="library-title">Your Music Library</h2>
+            <div class="music-list" id="musicList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🎵</div>
+                    <h3>No music uploaded yet</h3>
+                    <p>Upload some tracks to get started!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="now-playing" id="nowPlaying">
+        <div class="now-playing-info">
+            <div class="now-playing-icon">🎵</div>
+            <div class="now-playing-details">
+                <h4 id="currentTrack">No track selected</h4>
+                <p id="currentArtist">Ready to play</p>
+            </div>
+        </div>
+        <div class="audio-controls">
+            <button class="control-btn" id="prevBtn">⏮️</button>
+            <button class="control-btn" id="playPauseBtn">▶️</button>
+            <button class="control-btn" id="nextBtn">⏭️</button>
+        </div>
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div class="time-display">
+                <span id="currentTime">0:00</span>
+                <span id="totalTime">0:00</span>
+            </div>
+        </div>
+    </div>
+
+    <audio id="audioPlayer" preload="none"></audio>
+
+    <script>
+        let musicLibrary = [];
+        let currentTrackIndex = -1;
+        let isPlaying = false;
+
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.querySelector('.upload-area');
+        const musicList = document.getElementById('musicList');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const nowPlaying = document.getElementById('nowPlaying');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const currentTrack = document.getElementById('currentTrack');
+        const currentArtist = document.getElementById('currentArtist');
+        const progressBar = document.getElementById('progressBar');
+        const progress = document.getElementById('progress');
+        const currentTime = document.getElementById('currentTime');
+        const totalTime = document.getElementById('totalTime');
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        function handleFiles(files) {
+            for (let file of files) {
+                if (file.type.startsWith('audio/')) {
+                    const fileUrl = URL.createObjectURL(file);
+                    const track = {
+                        id: Date.now() + Math.random(),
+                        name: file.name.replace(/\.[^/.]+$/, ""),
+                        file: file,
+                        url: fileUrl,
+                        size: formatFileSize(file.size)
+                    };
+                    musicLibrary.push(track);
+                }
+            }
+            renderMusicLibrary();
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function renderMusicLibrary() {
+            if (musicLibrary.length === 0) {
+                musicList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🎵</div>
+                        <h3>No music uploaded yet</h3>
+                        <p>Upload some tracks to get started!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            musicList.innerHTML = musicLibrary.map((track, index) => `
+                <div class="music-item">
+                    <div class="music-info">
+                        <div class="music-icon">🎵</div>
+                        <div class="music-details">
+                            <h3>${track.name}</h3>
+                            <p>${track.size}</p>
+                        </div>
+                    </div>
+                    <div class="music-controls">
+                        <button class="play-btn" onclick="playTrack(${index})">
+                            ▶️ Play
+                        </button>
+                        <button class="delete-btn" onclick="deleteTrack(${index})">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function playTrack(index) {
+            currentTrackIndex = index;
+            const track = musicLibrary[index];
+            
+            audioPlayer.src = track.url;
+            audioPlayer.load();
+            audioPlayer.play();
+            
+            currentTrack.textContent = track.name;
+            currentArtist.textContent = 'Local File';
+            
+            nowPlaying.classList.add('active');
+            isPlaying = true;
+            playPauseBtn.textContent = '⏸️';
+        }
+
+        function deleteTrack(index) {
+            if (currentTrackIndex === index) {
+                audioPlayer.pause();
+                nowPlaying.classList.remove('active');
+                currentTrackIndex = -1;
+                isPlaying = false;
+                playPauseBtn.textContent = '▶️';
+            } else if (currentTrackIndex > index) {
+                currentTrackIndex--;
+            }
+            
+            URL.revokeObjectURL(musicLibrary[index].url);
+            musicLibrary.splice(index, 1);
+            renderMusicLibrary();
+        }
+
+        playPauseBtn.addEventListener('click', () => {
+            if (currentTrackIndex === -1) return;
+            
+            if (isPlaying) {
+                audioPlayer.pause();
+                playPauseBtn.textContent = '▶️';
+                isPlaying = false;
+            } else {
+                audioPlayer.play();
+                playPauseBtn.textContent = '⏸️';
+                isPlaying = true;
+            }
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (musicLibrary.length === 0) return;
+            
+            currentTrackIndex = currentTrackIndex <= 0 ? musicLibrary.length - 1 : currentTrackIndex - 1;
+            playTrack(currentTrackIndex);
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (musicLibrary.length === 0) return;
+            
+            currentTrackIndex = currentTrackIndex >= musicLibrary.length - 1 ? 0 : currentTrackIndex + 1;
+            playTrack(currentTrackIndex);
+        });
+
+        audioPlayer.addEventListener('timeupdate', () => {
+            if (audioPlayer.duration) {
+                const progressPercent = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+                progress.style.width = progressPercent + '%';
+                
+                currentTime.textContent = formatTime(audioPlayer.currentTime);
+                totalTime.textContent = formatTime(audioPlayer.duration);
+            }
+        });
+
+        audioPlayer.addEventListener('ended', () => {
+            if (currentTrackIndex < musicLibrary.length - 1) {
+                nextBtn.click();
+            } else {
+                isPlaying = false;
+                playPauseBtn.textContent = '▶️';
+            }
+        });
+
+        progressBar.addEventListener('click', (e) => {
+            if (audioPlayer.duration) {
+                const clickX = e.offsetX;
+                const width = progressBar.offsetWidth;
+                const clickTime = (clickX / width) * audioPlayer.duration;
+                audioPlayer.currentTime = clickTime;
+            }
+        });
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Initialize
+        renderMusicLibrary();
+    </script>
+</body>
+</html>
